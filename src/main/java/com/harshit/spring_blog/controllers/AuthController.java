@@ -14,10 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.harshit.spring_blog.exceptions.ApiException;
+import com.harshit.spring_blog.models.RefreshToken;
 import com.harshit.spring_blog.payloads.JwtAuthRequest;
 import com.harshit.spring_blog.payloads.JwtAuthResponse;
+import com.harshit.spring_blog.payloads.RefreshTokenRequest;
 import com.harshit.spring_blog.payloads.UserDto;
 import com.harshit.spring_blog.security.JwtTokenHelper;
+import com.harshit.spring_blog.services.RefreshTokenService;
 import com.harshit.spring_blog.services.UserService;
 
 import jakarta.validation.Valid;
@@ -38,16 +41,27 @@ public class AuthController {
   @Autowired
   private UserService userService;
 
+  @Autowired
+  private RefreshTokenService refreshTokenService;
+
   @PostMapping("/login")
   public ResponseEntity<JwtAuthResponse> createToken(
       @RequestBody JwtAuthRequest request) throws Exception {
     System.out.println("Username: " + request.getUsername() + " Password: " + request.getPassword());
+    System.out.println("1");
     authenticate(request.getUsername(), request.getPassword());
+    System.out.println("2");
 
     UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
+    System.out.println("3");
+
+    RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getUsername());
     String jwtToken = jwtTokenHelper.generateToken(userDetails.getUsername());
+    System.out.println("4");
+
     JwtAuthResponse authResponse = new JwtAuthResponse();
     authResponse.setToken(jwtToken);
+    authResponse.setRefreshToken(refreshToken.getRefreshToken());
     return new ResponseEntity<>(authResponse, HttpStatus.OK);
   }
 
@@ -65,8 +79,18 @@ public class AuthController {
 
   @PostMapping("/register")
   public ResponseEntity<UserDto> registerUser(
-     @Valid @RequestBody UserDto userDto) {
+      @Valid @RequestBody UserDto userDto) {
     UserDto registeredUser = userService.registerUser(userDto);
     return new ResponseEntity<UserDto>(registeredUser, HttpStatus.CREATED);
+  }
+
+  @PostMapping("/refreshToken")
+  public ResponseEntity<JwtAuthResponse> refreshToken(
+      @RequestBody RefreshToken refreshToken) {
+    String jwtToken = refreshTokenService.createJwtTokenFromRefreshToken(refreshToken);
+    JwtAuthResponse jwtAuthResponse = new JwtAuthResponse();
+    jwtAuthResponse.setToken(jwtToken);
+    jwtAuthResponse.setRefreshToken(refreshToken.getRefreshToken());
+    return new ResponseEntity<JwtAuthResponse>(jwtAuthResponse, HttpStatus.CREATED);
   }
 }

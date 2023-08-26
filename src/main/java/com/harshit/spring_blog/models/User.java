@@ -22,6 +22,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -59,11 +60,14 @@ public class User implements UserDetails {
   @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role", referencedColumnName = "roleId"))
   private Set<Roles> roles = new HashSet<>();
 
+  @OneToOne(mappedBy = "user")
+  private RefreshToken refreshToken ;
+
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
     List<SimpleGrantedAuthority> authorities = roles.stream()
         .map((role) -> new SimpleGrantedAuthority(role.getRoleName())).collect(Collectors.toList());
-    return authorities; 
+    return authorities;
   }
 
   @Override
